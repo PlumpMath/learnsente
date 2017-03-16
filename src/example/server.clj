@@ -102,6 +102,7 @@
   (let [{:keys [session params]} ring-req
         {:keys [user-id]} params]
     (debugf "Login request: %s" params)
+    (debugf "Session: %s" (str session))
     {:status 200 :session (assoc session :uid user-id)}))
 
 (defroutes ring-routes
@@ -188,6 +189,26 @@
 
 ;; TODO Add your (defmethod -event-msg-handler <event-id> [ev-msg] <body>)s here...
 
+(defmethod -event-msg-handler :example/button1
+  [{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
+  (let [session (:session ring-req)
+        uid     (:uid     session)]
+    (debugf "Just handle event: %s" event)
+    (debugf "Session: %s" (str session))
+    (debugf "uid: %s" (str uid))
+    (when ?reply-fn
+      (?reply-fn {:reply event}))))
+
+(defmethod -event-msg-handler :example/button2
+  [{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
+  (let [session (:session ring-req)
+        uid     (:uid     session)]
+    (debugf "Just handle event: %s" event)
+    (debugf "Session: %s" (str session))
+    (debugf "uid: %s" (str uid))
+    (when ?reply-fn
+      (?reply-fn {:reply event}))))
+
 ;;;; Sente event router (our `event-msg-handler` loop)
 
 (defonce router_ (atom nil))
@@ -204,7 +225,7 @@
 (defn  stop-web-server! [] (when-let [stop-fn @web-server_] (stop-fn)))
 (defn start-web-server! [& [port]]
   (stop-web-server!)
-  (let [port (or port 0) ; 0 => Choose any available port
+  (let [port 3000 ; (or port 0) ; 0 => Choose any available port
         ring-handler (var main-ring-handler)
 
         [port stop-fn]
@@ -229,6 +250,8 @@
         uri (format "http://localhost:%s/" port)]
 
     (infof "Web server is running at `%s`" uri)
+
+    ;; Initiate a browser tab.
     (try
       (.browse (java.awt.Desktop/getDesktop) (java.net.URI. uri))
       (catch java.awt.HeadlessException _))
